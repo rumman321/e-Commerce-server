@@ -66,6 +66,17 @@ async function run() {
       }
       next()
     }
+    //verify seller middleware
+    const verifySeller = async (req,res,next) => {
+      // console.log('data form verify admin middleware', req?.user);
+      const email = req.user?.email
+      const query = {email}
+      const result = await userCollection.findOne(query)
+      if(!result || result?.role !== 'seller'){
+        return res.status(403).send({message:'Forbidden access. Seller Only'})
+      }
+      next()
+    }
     //save or update
     app.post("/users/:email", async (req, res) => {
       const email = req.params.email;
@@ -109,7 +120,7 @@ async function run() {
       res.send(result)
     })
     //update user role
-    app.patch('/user/role/:email',verifyToken, async(req,res)=>{
+    app.patch('/user/role/:email',verifyToken,verifyAdmin, async(req,res)=>{
       const email = req.params.email
       const {role} = req.body
       const filter = {email}
@@ -127,6 +138,13 @@ async function run() {
       const result = await userCollection.findOne(query);
       res.send({ role: result?.role });
     });
+     //get all inventory data for seller
+     app.get("/plants/seller", verifyToken, verifySeller, async(req,res)=>{
+      const email = req.user.email //verifySeller er vitor req.user er vitor theke email astece
+      const query = {'seller.email' : email} //$ne :not equal db theke ai email chara baki email niye asa
+      const result = await plantCollection.find(query).toArray()
+      res.send(result)
+    })
   
     // Generate jwt token
     app.post("/jwt", async (req, res) => {
@@ -175,7 +193,7 @@ async function run() {
       res.send(result)
     })
     //save order data db
-    app.post("/order", verifyToken, async(req,res)=>{
+    app.post("/order", verifyToken,verifySeller, async(req,res)=>{
       const orderInfo= req.body
       const result= await orderCollection.insertOne(orderInfo)
       res.send(result)
