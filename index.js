@@ -138,14 +138,21 @@ async function run() {
       const result = await userCollection.findOne(query);
       res.send({ role: result?.role });
     });
-     //get all inventory data for seller
+     //get all inventory data for seller added
      app.get("/plants/seller", verifyToken, verifySeller, async(req,res)=>{
       const email = req.user.email //verifySeller er vitor req.user er vitor theke email astece
       const query = {'seller.email' : email} //$ne :not equal db theke ai email chara baki email niye asa
       const result = await plantCollection.find(query).toArray()
       res.send(result)
     })
-  
+   
+    //delete a data that seller added
+    app.delete('/plants/:id', verifyToken,verifySeller, async(req,res)=>{
+      const id = req.params.id
+      const query = {_id : new ObjectId(id)}
+      const result = await plantCollection.deleteOne(query)
+      res.send(result)
+    })
     // Generate jwt token
     app.post("/jwt", async (req, res) => {
       const email = req.body;
